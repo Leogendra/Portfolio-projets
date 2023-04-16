@@ -3,10 +3,11 @@ import random
 import numpy as np
 import agent as agentClass
 from display import displayScores
-from variables import *
+from constantes import *
 
 pygame.init()
 font = pygame.font.SysFont('arial', 25)
+
 
 class SnakeGame:
     
@@ -166,22 +167,18 @@ class SnakeGame:
 
 
 
-if __name__ == '__main__':
+def trainAgent():
     #Agent
     game = SnakeGame()
     agent = agentClass.Agent()
+    getParametres()
 
-    #Record
     record = 0
-    # try:
-    #     record = int([record for record in open("record.txt", "r")][0])
-    # except:
-    #     record = 0
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
 
-    while True:
+    while agent.nb_games < NB_TOTAL_GAMES:
         state_old = agent.get_state(game)
         final_move = agent.get_action(state_old)
         reward, game_over, score = game.play_step(final_move)
@@ -199,16 +196,44 @@ if __name__ == '__main__':
             if score > record:
                 record = score
                 agent.model.save()
-                print(f"Nouveau record : {record}")
-                with open("record.txt", "w") as f:
-                    f.write(str(record))
+                # print(f"Nouveau record : {record}")
+                with open(f"entrainement/{TIME_KEY}.txt", "a") as f:
+                    f.write(f"Game:{agent.nb_games};Record:{record}\n")
 
             if agent.nb_games % 10 == 0:
                 agent.model.save()
-                print(f"Game n°{agent.nb_games}, Score : {score}, Record : {record}")
+                # print(f"Game n°{agent.nb_games}, Score : {score}, Record : {record}")
 
             plot_scores.append(score)
+
             total_score += score
             mean_score = total_score / agent.nb_games
-            plot_mean_scores.append(mean_score)
-            displayScores(plot_scores, plot_mean_scores)
+            
+            lissage = 50
+            mean_score_glissante = sum(plot_scores[-lissage:]) / min(lissage, agent.nb_games)
+            plot_mean_scores.append(mean_score_glissante)
+            displayScores(plot_scores, plot_mean_scores, record, glissante=lissage)
+
+    print(f"Game n°{agent.nb_games}, Score : {score}, Record : {record}")
+    with open(f"entrainement/{TIME_KEY}.txt", "a") as f:
+        f.write(f"moyenne:{mean_score};moyenne_glissante:{mean_score_glissante}\n")
+
+
+
+def getParametres():
+    global TIME_KEY, GAMMA_DISCOUNT_RATE, VITESSE_APPRENTISSAGE, EPSILON_NB_GAMES, HIDDEN_SIZE, NB_TOTAL_GAMES
+
+    if os.path.exists("entrainement/parametres.txt"):
+        params = [line for line in open("entrainement/parametres.txt", "r")]
+
+        TIME_KEY = params[0].strip()
+        GAMMA_DISCOUNT_RATE = float(params[1].strip())
+        VITESSE_APPRENTISSAGE = float(params[2].strip())
+        EPSILON_NB_GAMES = int(params[3].strip())
+        HIDDEN_SIZE = int(params[4].strip())
+        NB_TOTAL_GAMES = int(params[5].strip())
+
+
+
+if __name__ == "__main__":
+    trainAgent()

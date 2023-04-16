@@ -1,17 +1,16 @@
 import random
 import numpy as np
 import torch
-from snake import Direction, Point
 from collections import deque
 from model import Linear_QNet, QTrainer
-from variables import *
-
+from constantes import *
 
 class Agent:
     def __init__(self):
+        getParametres()
         self.nb_games = 0
-        self.epsilon = 0     # seed du random
-        self.gamma = 0.9     # discount rate < 1, poids que met l'agent sur les reward passés
+        self.epsilon = 0                     # seed du random
+        self.gamma = GAMMA_DISCOUNT_RATE     # discount rate < 1, poids que met l'agent sur les reward passés
         self.memory = deque(maxlen=MAX_MEMORY)  # tas.  si max memoire dépassé -> popleft()
         self.model = Linear_QNet(11, HIDDEN_SIZE, 3)
         self.trainer = QTrainer(self.model, learning_rate=VITESSE_APPRENTISSAGE, gamma=self.gamma)
@@ -97,3 +96,19 @@ class Agent:
             next_move[move] = 1
 
         return next_move
+    
+
+
+
+def getParametres():
+    global TIME_KEY, GAMMA_DISCOUNT_RATE, VITESSE_APPRENTISSAGE, EPSILON_NB_GAMES, HIDDEN_SIZE, NB_TOTAL_GAMES
+
+    if os.path.exists("entrainement/parametres.txt"):
+        params = [line for line in open("entrainement/parametres.txt", "r")]
+
+        TIME_KEY = params[0].strip()
+        GAMMA_DISCOUNT_RATE = float(params[1].strip())
+        VITESSE_APPRENTISSAGE = float(params[2].strip())
+        EPSILON_NB_GAMES = int(params[3].strip())
+        HIDDEN_SIZE = int(params[4].strip())
+        NB_TOTAL_GAMES = int(params[5].strip())
